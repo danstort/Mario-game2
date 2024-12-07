@@ -4,13 +4,11 @@ window.onload = function () {
 
     const startButton = document.getElementById("start-button");
     const botonPausa = document.getElementById("boton-pausa"); // Botón Pausar
-   const botonReiniciar = document.getElementById("boton-reiniciar"); // Botón Reiniciar
+    const botonReiniciar = document.getElementById("boton-reiniciar"); // Botón Reiniciar
 
-    // Configuración de botones adicionales
-    botonPausa.textContent = "Pausar juego";
-    botonReiniciar.textContent = "Reiniciar juego";
-    document.body.appendChild(botonPausa);
-    document.body.appendChild(botonReiniciar);
+    // Deshabilitar botones inicialmente
+    botonPausa.disabled = true;
+    botonReiniciar.disabled = true;
 
     const livesDisplay = document.getElementById("lives");
     const highScoreDisplay = document.getElementById("high-score");
@@ -147,7 +145,7 @@ window.onload = function () {
         saltar() {
             if (!this.saltando) {
                 this.saltando = true;
-                this.velocidadSalto = 10; // Velocidad inicial del salto
+                this.velocidadSalto = 13; // Velocidad inicial del salto
             }
         }
     }
@@ -155,6 +153,11 @@ window.onload = function () {
     function iniciarJuego() {
         if (!gameRunning) {
             gameRunning = true;
+
+            // Habilitar botones
+            botonPausa.disabled = false;
+            botonReiniciar.disabled = false;
+
             lives = 3;
             livesDisplay.textContent = `Vidas: ${lives}`;
             console.log("Juego iniciado");
