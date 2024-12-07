@@ -3,6 +3,15 @@ window.onload = function () {
     const ctx = canvas.getContext("2d");
 
     const startButton = document.getElementById("start-button");
+    const botonPausa = document.getElementById("boton-pausa"); // Botón Pausar
+   const botonReiniciar = document.getElementById("boton-reiniciar"); // Botón Reiniciar
+
+    // Configuración de botones adicionales
+    botonPausa.textContent = "Pausar juego";
+    botonReiniciar.textContent = "Reiniciar juego";
+    document.body.appendChild(botonPausa);
+    document.body.appendChild(botonReiniciar);
+
     const livesDisplay = document.getElementById("lives");
     const highScoreDisplay = document.getElementById("high-score");
 
@@ -27,6 +36,8 @@ window.onload = function () {
         arriba: false,
         abajo: false,
     };
+
+    let paused = false; // Estado del juego pausado
 
     // Clase para manejar un tile
     function Tile(imagen, tileX, tileY, tileSize) {
@@ -169,7 +180,7 @@ window.onload = function () {
     let lastTime = 0;
 
     function bucleJuego(timeStamp) {
-        if (!gameRunning) return;
+        if (!gameRunning || paused) return;
 
         const deltaTime = timeStamp - lastTime;
         lastTime = timeStamp;
@@ -178,6 +189,24 @@ window.onload = function () {
         actualizarJuego();
 
         requestAnimationFrame(bucleJuego);
+    }
+
+    function pausarJuego() {
+        paused = !paused; // Alterna entre pausado y reanudar
+        botonPausa.textContent = paused ? "Reanudar juego" : "Pausar juego";
+
+        if (!paused) {
+            requestAnimationFrame(bucleJuego); // Reanuda el bucle
+        }
+    }
+
+    function reiniciarJuego() {
+        gameRunning = false;
+        paused = false;
+        personajeMario = new Mario(10, 318); // Reinicia Mario
+        lives = 3;
+        livesDisplay.textContent = `Vidas: ${lives}`;
+        iniciarJuego(); // Reinicia el juego
     }
 
     personajeMario = new Mario(10, 318);
@@ -191,9 +220,8 @@ window.onload = function () {
                 teclas.izquierda = true;
                 break;
             case 38: // Flecha arriba
-            personajeMario.saltar();
-            break;
-            
+                personajeMario.saltar();
+                break;
         }
     }
 
@@ -205,14 +233,12 @@ window.onload = function () {
             case 37: // Flecha izquierda
                 teclas.izquierda = false;
                 break;
-            case 38: // Flecha arriba
-            personajeMario.saltar();
-            break;
-            
         }
     }
 
     startButton.addEventListener("click", iniciarJuego);
+    botonPausa.addEventListener("click", pausarJuego);
+    botonReiniciar.addEventListener("click", reiniciarJuego);
     document.addEventListener("keydown", activaMovimiento, false);
     document.addEventListener("keyup", desactivaMovimiento, false);
 };
