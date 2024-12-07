@@ -12,6 +12,11 @@ window.onload = function () {
 
     highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
 
+    let personajeMario;
+    let posicion = 0;
+
+    const TOPEDERECHA = 580;
+
     // Clase para manejar un tile
     function Tile(imagen, tileX, tileY, tileSize) {
         this.imagen = imagen;
@@ -33,11 +38,7 @@ window.onload = function () {
     function dibujarTile(tile, destinoX, destinoY) {
         const { imagen, tileX, tileY, tileSize } = tile;
         ctx.drawImage(
-            imagen,           // Imagen fuente
-            tileX, tileY,     // Coordenadas del tile en la imagen
-            tileSize, tileSize, // Tamaño del tile en la imagen
-            destinoX, destinoY, // Coordenadas en el canvas
-            tileSize, tileSize  // Tamaño en el canvas
+            imagen, tileX, tileY, tileSize, tileSize, destinoX, destinoY, tileSize, tileSize
         );
     }
 
@@ -46,7 +47,6 @@ window.onload = function () {
         const { tileSize } = tile;
         const canvasHeight = canvas.height;
 
-        // Dibujar 2 filas desde el borde inferior del canvas
         for (let y = canvasHeight - tileSize * 2; y < canvasHeight; y += tileSize) {
             for (let x = 0; x < canvas.width; x += tileSize) {
                 dibujarTile(tile, x, y);
@@ -54,30 +54,127 @@ window.onload = function () {
         }
     }
 
-    // Inicializar el tile del suelo
     let tileSuelo;
+    let imagenPersonajes;
 
     cargarImagen('img/tiles.png').then(imagen => {
-        tileSuelo = new Tile(imagen, 0, 0, 16); // Tile de suelo en (0, 25) con tamaño 25x25
+        tileSuelo = new Tile(imagen, 0, 0, 16);
     });
 
-    // Función para iniciar el juego
+    cargarImagen('img/personajes.gif').then(imagen => {
+        imagenPersonajes = imagen;
+    });
+
+    class Mario {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.animacion = [[312, 0], [330, 0]]; // Posiciones del sprite
+            this.ancho = 18;
+            this.alto = 34;
+            this.velocidad = 1;
+        }
+
+        dibujar() {
+            if (!imagenPersonajes) return;
+            ctx.drawImage(
+                imagenPersonajes,
+                this.animacion[posicion][0], this.animacion[posicion][1], // Sprite recorte
+                18, 34, // Tamaño del recorte
+                this.x, this.y, // Posición en canvas
+                this.ancho, this.alto // Tamaño en canvas
+            );
+        }
+
+        animar() {
+            posicion = (posicion + 1) % this.animacion.length;
+        }
+    }
+
+    Mario.prototype.generaPosicionDerecha = function () {
+
+		this.x = this.x + this.velocidad;
+
+		if (this.x > TOPEDERECHA) {
+
+			
+			this.x = TOPEDERECHA;
+		}
+
+		this.animacion = [[312, 0], [330, 0]];
+	}
+
+
     function iniciarJuego() {
         if (!gameRunning) {
             gameRunning = true;
             lives = 3;
             livesDisplay.textContent = `Vidas: ${lives}`;
             console.log("Juego iniciado");
-        }
-
-        // Esperar a que el tile esté listo antes de dibujar el suelo
-        if (tileSuelo) {
-            dibujarSuelo(tileSuelo);
-        } else {
-            console.error("El tile del suelo no está listo.");
+            bucleJuego(); // Iniciar el bucle del juego
         }
     }
 
-    // Añadir event listener al botón de inicio
+    function actualizarJuego() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Dibujar suelo
+        if (tileSuelo) {
+            dibujarSuelo(tileSuelo);
+        }
+
+        // Dibujar Mario
+        if (personajeMario) {
+            personajeMario.dibujar();
+        }
+    }
+
+    function bucleJuego() {
+        if (!gameRunning) return;
+
+        actualizarJuego();
+        requestAnimationFrame(bucleJuego);
+    }
+
+    function iniciarAnimacionMario() {
+        setInterval(() => {
+            if (gameRunning && personajeMario) {
+                personajeMario.animar();
+            }
+        }, 1000 / 8); // 8 frames por segundo
+    }
+
+    personajeMario = new Mario(10, 335);
+
+    function activaMovimiento(evt) {
+
+		switch (evt.keyCode) {
+
+
+			// Right arrow.
+			case 39:
+				xDerecha = true;
+				break;
+
+			case 37:
+				xIzquierda = true;
+				break;
+
+			case 38:
+				xArriba = true;
+				break;
+
+			case 40:
+				xAbajo = true;
+				break;
+
+		}
+	}
+
     startButton.addEventListener("click", iniciarJuego);
+
+    document.addEventListener("keydown", activaMovimiento, false);
+	//document.addEventListener("keyup", desactivaMovimiento, false);
+    // Iniciar animación de Mario
+    iniciarAnimacionMario();
 };
