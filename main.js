@@ -16,6 +16,17 @@ window.onload = function () {
     let posicion = 0;
 
     const TOPEDERECHA = 580;
+    const TOPEIZQUIERDA = 0;
+    const TOPEARRIBA = 0;
+    const TOPEABAJO = canvas.height - 82;
+
+    // Control de teclas pulsadas
+    const teclas = {
+        derecha: false,
+        izquierda: false,
+        arriba: false,
+        abajo: false,
+    };
 
     // Clase para manejar un tile
     function Tile(imagen, tileX, tileY, tileSize) {
@@ -34,14 +45,6 @@ window.onload = function () {
         });
     }
 
-    // Función para dibujar un tile específico
-    function dibujarTile(tile, destinoX, destinoY) {
-        const { imagen, tileX, tileY, tileSize } = tile;
-        ctx.drawImage(
-            imagen, tileX, tileY, tileSize, tileSize, destinoX, destinoY, tileSize, tileSize
-        );
-    }
-
     // Dibujar el suelo con 2 filas de tiles
     function dibujarSuelo(tile) {
         const { tileSize } = tile;
@@ -49,7 +52,10 @@ window.onload = function () {
 
         for (let y = canvasHeight - tileSize * 2; y < canvasHeight; y += tileSize) {
             for (let x = 0; x < canvas.width; x += tileSize) {
-                dibujarTile(tile, x, y);
+                ctx.drawImage(
+                    tile.imagen, tile.tileX, tile.tileY, tileSize, tileSize,
+                    x, y, tileSize, tileSize
+                );
             }
         }
     }
@@ -70,9 +76,17 @@ window.onload = function () {
             this.x = x;
             this.y = y;
             this.animacion = [[312, 0], [330, 0]]; // Posiciones del sprite
-            this.ancho = 18;
-            this.alto = 34;
-            this.velocidad = 1;
+            this.ancho = 27;
+            this.alto = 51;
+            this.velocidad = 2;
+
+            this.saltando = false;
+            this.velocidadSalto = 0;
+            this.gravedad = 0.5; // Simula la fuerza de gravedad
+
+            // Control de animación
+            this.animacionDelay = 140; // Tiempo en milisegundos entre fotogramas
+            this.animacionTimer = 0;   // Temporizador interno
         }
 
         dibujar() {
@@ -86,24 +100,46 @@ window.onload = function () {
             );
         }
 
-        animar() {
-            posicion = (posicion + 1) % this.animacion.length;
+        animar(deltaTime) {
+            this.animacionTimer += deltaTime;
+
+            if (this.animacionTimer >= this.animacionDelay) {
+                posicion = (posicion + 1) % this.animacion.length;
+                this.animacionTimer = 0; // Reinicia el temporizador
+            }
+        }
+
+        mover() {
+            if (teclas.derecha) {
+                this.x += this.velocidad;
+                if (this.x > TOPEDERECHA) this.x = TOPEDERECHA;
+                this.animacion = [[312, 0], [330, 0]];
+            }
+            if (teclas.izquierda) {
+                this.x -= this.velocidad;
+                if (this.x < TOPEIZQUIERDA) this.x = TOPEIZQUIERDA;
+                this.animacion = [[164, 0], [182, 0]];
+            }
+            if (this.saltando) {
+                // Si está saltando, aplica física del salto
+                this.y -= this.velocidadSalto; // Aplica velocidad inicial hacia arriba
+                this.velocidadSalto -= this.gravedad; // Gravedad reduce la velocidad
+
+                // Detener el salto cuando alcanza el suelo
+                if (this.y >= TOPEABAJO) {
+                    this.y = TOPEABAJO;
+                    this.saltando = false;
+                }
+            }
+        }
+
+        saltar() {
+            if (!this.saltando) {
+                this.saltando = true;
+                this.velocidadSalto = 10; // Velocidad inicial del salto
+            }
         }
     }
-
-    Mario.prototype.generaPosicionDerecha = function () {
-
-		this.x = this.x + this.velocidad;
-
-		if (this.x > TOPEDERECHA) {
-
-			
-			this.x = TOPEDERECHA;
-		}
-
-		this.animacion = [[312, 0], [330, 0]];
-	}
-
 
     function iniciarJuego() {
         if (!gameRunning) {
@@ -111,7 +147,7 @@ window.onload = function () {
             lives = 3;
             livesDisplay.textContent = `Vidas: ${lives}`;
             console.log("Juego iniciado");
-            bucleJuego(); // Iniciar el bucle del juego
+            bucleJuego(0); // Iniciar el bucle del juego
         }
     }
 
@@ -123,58 +159,60 @@ window.onload = function () {
             dibujarSuelo(tileSuelo);
         }
 
-        // Dibujar Mario
+        // Mover y dibujar Mario
         if (personajeMario) {
+            personajeMario.mover();
             personajeMario.dibujar();
         }
     }
 
-    function bucleJuego() {
+    let lastTime = 0;
+
+    function bucleJuego(timeStamp) {
         if (!gameRunning) return;
 
+        const deltaTime = timeStamp - lastTime;
+        lastTime = timeStamp;
+
+        personajeMario.animar(deltaTime);
         actualizarJuego();
+
         requestAnimationFrame(bucleJuego);
     }
 
-    function iniciarAnimacionMario() {
-        setInterval(() => {
-            if (gameRunning && personajeMario) {
-                personajeMario.animar();
-            }
-        }, 1000 / 8); // 8 frames por segundo
-    }
-
-    personajeMario = new Mario(10, 335);
+    personajeMario = new Mario(10, 318);
 
     function activaMovimiento(evt) {
+        switch (evt.keyCode) {
+            case 39: // Flecha derecha
+                teclas.derecha = true;
+                break;
+            case 37: // Flecha izquierda
+                teclas.izquierda = true;
+                break;
+            case 38: // Flecha arriba
+            personajeMario.saltar();
+            break;
+            
+        }
+    }
 
-		switch (evt.keyCode) {
-
-
-			// Right arrow.
-			case 39:
-				xDerecha = true;
-				break;
-
-			case 37:
-				xIzquierda = true;
-				break;
-
-			case 38:
-				xArriba = true;
-				break;
-
-			case 40:
-				xAbajo = true;
-				break;
-
-		}
-	}
+    function desactivaMovimiento(evt) {
+        switch (evt.keyCode) {
+            case 39: // Flecha derecha
+                teclas.derecha = false;
+                break;
+            case 37: // Flecha izquierda
+                teclas.izquierda = false;
+                break;
+            case 38: // Flecha arriba
+            personajeMario.saltar();
+            break;
+            
+        }
+    }
 
     startButton.addEventListener("click", iniciarJuego);
-
     document.addEventListener("keydown", activaMovimiento, false);
-	//document.addEventListener("keyup", desactivaMovimiento, false);
-    // Iniciar animación de Mario
-    iniciarAnimacionMario();
+    document.addEventListener("keyup", desactivaMovimiento, false);
 };
