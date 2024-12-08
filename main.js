@@ -3,6 +3,10 @@ window.onload = function () {
     const ctx = canvas.getContext("2d");
 
     const saltoSonido = document.getElementById("salto-sonido");
+    const monedaSonido = document.getElementById("moneda-sonido");
+    const aplastarSonido = document.getElementById("aplastar-sonido");
+    const golpeSonido = document.getElementById("golpe-sonido");
+    const gameOverSonido = document.getElementById("game-over-sonido");
 
 
     const startButton = document.getElementById("start-button");
@@ -36,7 +40,7 @@ window.onload = function () {
     const ENEMY_SPEED = 1.5;
     const ENEMY_GENERATION_INTERVAL = 3000;
     const NUBE_VELOCIDAD = 1; // Velocidad de las nubes
-    const NUBE_INTERVALO = 5000;
+    const NUBE_INTERVALO = 1500;
 
     let paused = false;
     let enemyIntervalId = null; // Identificador del intervalo para enemigos
@@ -267,19 +271,40 @@ window.onload = function () {
             this.ancho = 32;
             this.alto = 32;
             this.velocidad = 2; // Velocidad de desplazamiento de derecha a izquierda
-            this.sprite = [0, 64]; // Coordenadas del sprite de la caja en tiles.png
+
+            // Coordenadas de los sprites de la animación
+            this.sprites = [
+                [385, 18],  // Primer fotograma
+                [385, 82], // Segundo fotograma
+
+            ];
+            this.spriteIndex = 0;       // Índice del fotograma actual
+            this.animacionDelay = 200; // Tiempo entre fotogramas (ms)
+            this.animacionTimer = 0;    // Temporizador para la animación
         }
 
         mover() {
             this.x -= this.velocidad;
         }
 
+        animar(deltaTime) {
+            this.animacionTimer += deltaTime;
+
+            if (this.animacionTimer >= this.animacionDelay) {
+                // Cambiar al siguiente fotograma
+                this.spriteIndex = (this.spriteIndex + 1) % this.sprites.length;
+                this.animacionTimer = 0;
+            }
+        }
+
         dibujar() {
             if (!tileSuelo) return;
+            const [spriteX, spriteY] = this.sprites[this.spriteIndex];
+
             ctx.drawImage(
                 tileSuelo.imagen,
-                this.sprite[0], this.sprite[1], 16, 16, // Tamaño del sprite en la imagen
-                this.x, this.y, this.ancho, this.alto  // Tamaño de la caja en el canvas
+                spriteX, spriteY, 16, 13.8, // Coordenadas y tamaño del sprite en la imagen
+                this.x, this.y, this.ancho, this.alto // Coordenadas y tamaño en el canvas
             );
         }
 
@@ -303,15 +328,16 @@ window.onload = function () {
         if (!gameRunning || paused) return;
 
         const x = canvas.width; // Aparecen desde la derecha
-        const y = canvas.height - 190; // Por ejemplo, 150 píxeles por encima del suelo
+        const y = (canvas.height - 190) - (Math.random() * 50);
         const caja = new CajaMoneda(x, y);
         cajasMoneda.push(caja);
     }
 
     // Actualizar la lógica de las cajas de monedas en cada cuadro
-    function actualizarCajasMoneda() {
+    function actualizarCajasMoneda(deltaTime) {
         cajasMoneda.forEach((caja, index) => {
             caja.mover();
+            caja.animar(deltaTime); // Actualizar animación
             caja.dibujar();
 
             // Comprobar colisión con Mario
@@ -319,6 +345,10 @@ window.onload = function () {
                 cajasMoneda.splice(index, 1); // Eliminar la caja
                 score += 10; // Incrementar puntuación actual
                 scoreDisplay.textContent = `Puntuación: ${score}`;
+                if (monedaSonido) {
+                    monedaSonido.currentTime = 0; // Reiniciar el sonido si ya se está reproduciendo
+                    monedaSonido.play();
+                }
             }
 
             // Eliminar cajas que salen de la pantalla
@@ -416,7 +446,7 @@ window.onload = function () {
         }
     }
 
-    function actualizarJuego() {
+    function actualizarJuego(deltaTime) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (tileSuelo) {
@@ -428,33 +458,53 @@ window.onload = function () {
             personajeMario.dibujar();
         }
 
-
-        actualizarCajasMoneda();
+        actualizarCajasMoneda(deltaTime);
 
         enemigos.forEach((enemigo, index) => {
             enemigo.mover();
-            enemigo.dibujar(2);
+            enemigo.dibujar(16);
 
             const colision = detectarColision(personajeMario, enemigo);
             if (colision === "aplastar") {
                 enemigos.splice(index, 1);
                 score += 20;
                 scoreDisplay.textContent = `Puntuación: ${score}`;
+
+                if (aplastarSonido) {
+                    aplastarSonido.currentTime = 0; // Reiniciar el sonido si ya se está reproduciendo
+                    aplastarSonido.play();
+                }
+
             } else if (colision === "colision") {
                 enemigos.splice(index, 1);
                 lives--;
                 livesDisplay.textContent = `Vidas: ${lives}`;
 
+                if (golpeSonido) {
+                    golpeSonido.currentTime = 0; // Reiniciar el sonido si ya se está reproduciendo
+                    golpeSonido.play();
+                }
+
+
                 if (lives <= 0) {
-                    alert("¡Has perdido! Reinicia el juego.");
-
-                    if (score > highScore) {
-                        highScore = score;
-                        localStorage.setItem("highScore", highScore); // Guardar mejor puntuación
-                        highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
-                    }
-
                     detenerJuego();
+                    if (gameOverSonido) {
+                        gameOverSonido.currentTime = 0; // Reiniciar el sonido si ya se está reproduciendo
+                        gameOverSonido.play();
+
+                        // Esperar a que el sonido termine antes de mostrar el alert
+                        gameOverSonido.onended = () => {
+                            if (score > highScore) {
+                                highScore = score;
+                                localStorage.setItem("highScore", highScore); // Guardar mejor puntuación
+                                highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
+
+                            }
+
+                            alert("¡Has perdido! Reinicia el juego.");
+
+                        };
+                    }
                 }
             }
 
@@ -501,7 +551,7 @@ window.onload = function () {
         lastTime = timeStamp;
 
         personajeMario.animar(deltaTime);
-        actualizarJuego();
+        actualizarJuego(deltaTime);
 
         requestAnimationFrame(bucleJuego);
     }

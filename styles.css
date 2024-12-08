@@ -21,8 +21,14 @@ body {
     background-color: #5c94fc;
 }
 
-#start-button, #boton-pausa, #boton-reiniciar {
+#button-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Espaciado entre botones */
     margin-top: 10px;
+}
+
+#start-button, #boton-pausa, #boton-reiniciar {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
@@ -30,7 +36,7 @@ body {
 
 #info-panel {
     margin-top: 10px;
-    font-size: 18px;
+    font-size: 20px;
     display: flex;
     justify-content: space-between;
     width: 100%;
