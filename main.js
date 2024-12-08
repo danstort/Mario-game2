@@ -2,6 +2,9 @@ window.onload = function () {
     const canvas = document.getElementById("game-canvas");
     const ctx = canvas.getContext("2d");
 
+    const saltoSonido = document.getElementById("salto-sonido");
+
+
     const startButton = document.getElementById("start-button");
     const botonPausa = document.getElementById("boton-pausa");
     const botonReiniciar = document.getElementById("boton-reiniciar");
@@ -9,14 +12,17 @@ window.onload = function () {
     botonPausa.disabled = true;
     botonReiniciar.disabled = true;
 
-    const livesDisplay = document.getElementById("lives");
-    const highScoreDisplay = document.getElementById("high-score");
+    const livesDisplay = document.getElementById("lives");  // Elemento para mostrar las vidas
+    const highScoreDisplay = document.getElementById("high-score"); // Elemento para mostrar la mejor puntuación
+    const scoreDisplay = document.getElementById("score");  // Elemento para mostrar la puntuación actual
 
-    let lives = 3;
-    let highScore = localStorage.getItem("highScore") || 0;
-    let gameRunning = false;
+    let lives = 3; // Vidas iniciales
+    let score = 0; // Puntuación actual
+    let highScore = localStorage.getItem("highScore") || 0; // Mejor puntuación
+    let gameRunning = false; // Indica si el juego está en ejecución. Por defecto, el juego no está en ejecución.
 
     highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
+    scoreDisplay.textContent = `Puntuación: ${score}`;
 
     let personajeMario;
     let nubes = [];
@@ -27,7 +33,7 @@ window.onload = function () {
     const TOPEIZQUIERDA = 0;
     const TOPEABAJO = canvas.height - 82;
 
-    const ENEMY_SPEED = 2;
+    const ENEMY_SPEED = 1.5;
     const ENEMY_GENERATION_INTERVAL = 3000;
     const NUBE_VELOCIDAD = 1; // Velocidad de las nubes
     const NUBE_INTERVALO = 5000;
@@ -181,6 +187,11 @@ window.onload = function () {
                 this.saltando = true;
                 this.velocidadSalto = 13;
             }
+
+            if (saltoSonido) {
+                saltoSonido.currentTime = 0; // Reiniciar el sonido si ya se está reproduciendo
+                saltoSonido.play();
+            }
         }
     }
 
@@ -191,16 +202,31 @@ window.onload = function () {
             this.ancho = 30;
             this.alto = 30;
             this.velocidad = ENEMY_SPEED;
-            this.sprite = [[294, 185], [314, 185]];
+            this.sprite = [[294, 185], [313, 185]];
             this.spriteIndex = 0;
+            this.animacionDelay = 300; // Tiempo entre fotogramas en milisegundos
+            this.animacionTimer = 0;  // Temporizador para el cambio de sprite
         }
 
         mover() {
             this.x -= this.velocidad;
         }
 
-        dibujar() {
+        animar(deltaTime) {
+            this.animacionTimer += deltaTime;
+
+            if (this.animacionTimer >= this.animacionDelay) {
+                this.spriteIndex = (this.spriteIndex + 1) % this.sprite.length;
+                this.animacionTimer = 0;
+            }
+        }
+
+        dibujar(deltaTime) {
             if (!imagenPersonajes) return;
+
+            // Animar antes de dibujar
+            this.animar(deltaTime);
+
             ctx.drawImage(
                 imagenPersonajes,
                 this.sprite[this.spriteIndex][0], this.sprite[this.spriteIndex][1],
@@ -208,8 +234,6 @@ window.onload = function () {
                 this.x, this.y,
                 this.ancho, this.alto
             );
-
-            this.spriteIndex = (this.spriteIndex + 1) % this.sprite.length;
         }
 
         fueraDePantalla() {
@@ -236,6 +260,76 @@ window.onload = function () {
         return null;
     }
 
+    class CajaMoneda {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.ancho = 32;
+            this.alto = 32;
+            this.velocidad = 2; // Velocidad de desplazamiento de derecha a izquierda
+            this.sprite = [0, 64]; // Coordenadas del sprite de la caja en tiles.png
+        }
+
+        mover() {
+            this.x -= this.velocidad;
+        }
+
+        dibujar() {
+            if (!tileSuelo) return;
+            ctx.drawImage(
+                tileSuelo.imagen,
+                this.sprite[0], this.sprite[1], 16, 16, // Tamaño del sprite en la imagen
+                this.x, this.y, this.ancho, this.alto  // Tamaño de la caja en el canvas
+            );
+        }
+
+        fueraDePantalla() {
+            return this.x + this.ancho < 0;
+        }
+
+        colisionConMario(mario) {
+            const colisionX = mario.x < this.x + this.ancho && mario.x + mario.ancho > this.x;
+            const colisionY = mario.y < this.y + this.alto && mario.y + mario.alto > this.y;
+
+            return colisionX && colisionY;
+        }
+    }
+
+    // Array para almacenar las cajas de monedas
+    let cajasMoneda = [];
+
+    // Función para generar cajas de monedas
+    function generarCajaMoneda() {
+        if (!gameRunning || paused) return;
+
+        const x = canvas.width; // Aparecen desde la derecha
+        const y = canvas.height - 190; // Por ejemplo, 150 píxeles por encima del suelo
+        const caja = new CajaMoneda(x, y);
+        cajasMoneda.push(caja);
+    }
+
+    // Actualizar la lógica de las cajas de monedas en cada cuadro
+    function actualizarCajasMoneda() {
+        cajasMoneda.forEach((caja, index) => {
+            caja.mover();
+            caja.dibujar();
+
+            // Comprobar colisión con Mario
+            if (caja.colisionConMario(personajeMario)) {
+                cajasMoneda.splice(index, 1); // Eliminar la caja
+                score += 10; // Incrementar puntuación actual
+                scoreDisplay.textContent = `Puntuación: ${score}`;
+            }
+
+            // Eliminar cajas que salen de la pantalla
+            if (caja.fueraDePantalla()) {
+                cajasMoneda.splice(index, 1);
+            }
+        });
+    }
+
+
+
     function detenerJuego() {
         gameRunning = false;
         paused = true;
@@ -244,6 +338,7 @@ window.onload = function () {
         teclas.arriba = false;
         botonPausa.disabled = true;
         botonReiniciar.disabled = false;
+        startButton.disabled = true;
 
         clearInterval(enemyIntervalId); // Detener el intervalo de generación de enemigos
     }
@@ -273,10 +368,18 @@ window.onload = function () {
         paused = false;
         personajeMario = new Mario(10, 318);
         enemigos = [];
+        nubes = [];
         lives = 3;
+        score = 0;
         livesDisplay.textContent = `Vidas: ${lives}`;
-        highScore = 0;
-        highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
+        scoreDisplay.textContent = `Puntuación: ${score}`;
+
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("highScore", highScore); // Guardar mejor puntuación
+            highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
+        }
+
         iniciarJuego();
     }
 
@@ -325,15 +428,18 @@ window.onload = function () {
             personajeMario.dibujar();
         }
 
+
+        actualizarCajasMoneda();
+
         enemigos.forEach((enemigo, index) => {
             enemigo.mover();
-            enemigo.dibujar();
+            enemigo.dibujar(2);
 
             const colision = detectarColision(personajeMario, enemigo);
             if (colision === "aplastar") {
                 enemigos.splice(index, 1);
-                highScore += 20;
-                highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
+                score += 20;
+                scoreDisplay.textContent = `Puntuación: ${score}`;
             } else if (colision === "colision") {
                 enemigos.splice(index, 1);
                 lives--;
@@ -341,6 +447,13 @@ window.onload = function () {
 
                 if (lives <= 0) {
                     alert("¡Has perdido! Reinicia el juego.");
+
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem("highScore", highScore); // Guardar mejor puntuación
+                        highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
+                    }
+
                     detenerJuego();
                 }
             }
@@ -360,6 +473,10 @@ window.onload = function () {
             }
         });
     }
+
+
+    const CAJA_MONEDA_INTERVALO = 4000;
+    setInterval(generarCajaMoneda, CAJA_MONEDA_INTERVALO);
 
     function dibujarSuelo(tile) {
         const { tileSize } = tile;
