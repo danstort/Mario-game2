@@ -19,14 +19,17 @@ window.onload = function () {
     const livesDisplay = document.getElementById("lives");  // Elemento para mostrar las vidas
     const highScoreDisplay = document.getElementById("high-score"); // Elemento para mostrar la mejor puntuación
     const scoreDisplay = document.getElementById("score");  // Elemento para mostrar la puntuación actual
+    const nivelDisplay = document.getElementById("nivel-actual");  // Elemento para mostrar el nivel actual
 
     let lives = 3; // Vidas iniciales
+    let nivel = 1; // Nivel inicial
     let score = 0; // Puntuación actual
     let highScore = localStorage.getItem("highScore") || 0; // Mejor puntuación
     let gameRunning = false; // Indica si el juego está en ejecución. Por defecto, el juego no está en ejecución.
 
     highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
     scoreDisplay.textContent = `Puntuación: ${score}`;
+    nivelDisplay.textContent = `Nivel: ${nivel}`;
 
     let personajeMario;
     let nubes = [];
@@ -41,6 +44,8 @@ window.onload = function () {
     const ENEMY_GENERATION_INTERVAL = 3000;
     const NUBE_VELOCIDAD = 1; // Velocidad de las nubes
     const NUBE_INTERVALO = 1500;
+    const ENEMY_BASE_SPEED = 1.5; // Velocidad base de los enemigos
+    let velocidadEnemigoActual = ENEMY_BASE_SPEED;
 
     let paused = false;
     let enemyIntervalId = null; // Identificador del intervalo para enemigos
@@ -205,7 +210,7 @@ window.onload = function () {
             this.y = y;
             this.ancho = 30;
             this.alto = 30;
-            this.velocidad = ENEMY_SPEED;
+            this.velocidad = velocidadEnemigoActual; 
             this.sprite = [[294, 185], [313, 185]];
             this.spriteIndex = 0;
             this.animacionDelay = 300; // Tiempo entre fotogramas en milisegundos
@@ -262,6 +267,26 @@ window.onload = function () {
             return "colision";
         }
         return null;
+    }
+
+    function actualizarNivel() {
+        const nuevoNivel = Math.floor(score / 100) + 1; // Calcula el nivel según la puntuación
+        if (nuevoNivel > nivel) {
+            nivel = nuevoNivel; // Actualiza el nivel
+            nivelDisplay.textContent = `Nivel: ${nivel}`; // Muestra el nuevo nivel
+            ajustarVelocidadEnemigos(); // Incrementa la velocidad de los enemigos
+        }
+    }
+
+    function ajustarVelocidadEnemigos() {
+        enemigos.forEach(enemigo => {
+            enemigo.velocidad *= 1.25; // Incrementa la velocidad de cada enemigo
+        });
+        ajustarVelocidadBase(); // Ajusta la velocidad base para los nuevos enemigos
+    }
+
+    function ajustarVelocidadBase() {
+        velocidadEnemigoActual *= 1.25; // Incrementa la velocidad base de los nuevos enemigos
     }
 
     class CajaMoneda {
@@ -382,6 +407,7 @@ window.onload = function () {
 
             lives = 3;
             livesDisplay.textContent = `Vidas: ${lives}`;
+
             console.log("Juego iniciado");
 
             bucleJuego(0);
@@ -396,14 +422,17 @@ window.onload = function () {
     function reiniciarJuego() {
         detenerJuego();
         paused = false;
-        botonPausa.textContent = "Pausar juego"; // Restablecer el texto del botón "Pausar"
+        botonPausa.textContent = "Pausar juego"; // Restablece el texto del botón "Pausar juego"
         personajeMario = new Mario(10, 318);
         enemigos = [];
         nubes = [];
         lives = 3;
         score = 0;
+        nivel = 1;
+        velocidadEnemigoActual = ENEMY_BASE_SPEED; // Restablece la velocidad base de los enemigos
         livesDisplay.textContent = `Vidas: ${lives}`;
         scoreDisplay.textContent = `Puntuación: ${score}`;
+        nivelDisplay.textContent = `Nivel: ${nivel}`;
 
         if (score > highScore) {
             highScore = score;
@@ -448,6 +477,7 @@ window.onload = function () {
     }
 
     function actualizarJuego(deltaTime) {
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (tileSuelo) {
@@ -513,6 +543,9 @@ window.onload = function () {
                 enemigos.splice(index, 1);
             }
         });
+
+
+        actualizarNivel();
 
         nubes.forEach((nube, index) => {
             nube.mover();
