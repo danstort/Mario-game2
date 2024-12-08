@@ -24,6 +24,8 @@ window.onload = function () {
     let lives = 3; // Vidas iniciales
     let nivel = 1; // Nivel inicial
     let score = 0; // Puntuación actual
+    let ultimoHito = 0; 
+
     let highScore = localStorage.getItem("highScore") || 0; // Mejor puntuación
     let gameRunning = false; // Indica si el juego está en ejecución. Por defecto, el juego no está en ejecución.
 
@@ -278,6 +280,14 @@ window.onload = function () {
         }
     }
 
+    function comprobarIncrementoVida() {
+        if (score >= ultimoHito + 500) { // Si la puntuación supera el siguiente múltiplo de 500
+            lives++; // Incrementa una vida
+            ultimoHito += 500; // Actualiza el último hito alcanzado
+            livesDisplay.textContent = `Vidas: ${lives}`; // Actualiza el texto de las vidas
+        }
+    }
+
     function ajustarVelocidadEnemigos() {
         enemigos.forEach(enemigo => {
             enemigo.velocidad *= 1.25; // Incrementa la velocidad de cada enemigo
@@ -429,6 +439,7 @@ window.onload = function () {
         lives = 3;
         score = 0;
         nivel = 1;
+        ultimoHito = 0;
         velocidadEnemigoActual = ENEMY_BASE_SPEED; // Restablece la velocidad base de los enemigos
         livesDisplay.textContent = `Vidas: ${lives}`;
         scoreDisplay.textContent = `Puntuación: ${score}`;
@@ -546,6 +557,7 @@ window.onload = function () {
 
 
         actualizarNivel();
+        comprobarIncrementoVida();
 
         nubes.forEach((nube, index) => {
             nube.mover();
