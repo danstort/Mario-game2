@@ -7,6 +7,9 @@ window.onload = function () {
     const aplastarSonido = document.getElementById("aplastar-sonido");
     const golpeSonido = document.getElementById("golpe-sonido");
     const gameOverSonido = document.getElementById("game-over-sonido");
+    const nivelUpSonido = document.getElementById("nivel-completado-sonido");
+    const inicioSonido = document.getElementById("musica-inicial");
+
 
 
     const startButton = document.getElementById("start-button");
@@ -24,7 +27,7 @@ window.onload = function () {
     let lives = 3; // Vidas iniciales
     let nivel = 1; // Nivel inicial
     let score = 0; // Puntuación actual
-    let ultimoHito = 0; 
+    let ultimoHito = 0;
 
     let highScore = localStorage.getItem("highScore") || 0; // Mejor puntuación
     let gameRunning = false; // Indica si el juego está en ejecución. Por defecto, el juego no está en ejecución.
@@ -212,7 +215,7 @@ window.onload = function () {
             this.y = y;
             this.ancho = 30;
             this.alto = 30;
-            this.velocidad = velocidadEnemigoActual; 
+            this.velocidad = velocidadEnemigoActual;
             this.sprite = [[294, 185], [313, 185]];
             this.spriteIndex = 0;
             this.animacionDelay = 300; // Tiempo entre fotogramas en milisegundos
@@ -276,6 +279,10 @@ window.onload = function () {
         if (nuevoNivel > nivel) {
             nivel = nuevoNivel; // Actualiza el nivel
             nivelDisplay.textContent = `Nivel: ${nivel}`; // Muestra el nuevo nivel
+            if (nivelUpSonido) {
+                nivelUpSonido.currentTime = 0; // Reinicia el sonido si ya se está reproduciendo
+                nivelUpSonido.play();
+            }
             ajustarVelocidadEnemigos(); // Incrementa la velocidad de los enemigos
         }
     }
@@ -413,7 +420,8 @@ window.onload = function () {
             gameRunning = true;
 
             botonPausa.disabled = false;
-            botonReiniciar.disabled = false;
+
+            startButton.disabled = true
 
             lives = 3;
             livesDisplay.textContent = `Vidas: ${lives}`;
@@ -452,6 +460,7 @@ window.onload = function () {
         }
 
         iniciarJuego();
+        botonReiniciar.disabled = true;
     }
 
     personajeMario = new Mario(10, 318);
@@ -473,6 +482,10 @@ window.onload = function () {
             case 38:
                 personajeMario.saltar();
                 break;
+            case 32:
+                personajeMario.saltar();
+                break;
+           
         }
     }
 
@@ -605,11 +618,30 @@ window.onload = function () {
     function pausarJuego() {
         paused = !paused;
         botonPausa.textContent = paused ? "Reanudar juego" : "Pausar juego";
+        botonReiniciar.disabled = !paused;
 
         if (!paused) {
             requestAnimationFrame(bucleJuego);
         }
     }
+
+
+    //Pausa el juego al presionar la tecla Esc
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            pausarJuego();
+        }
+    });
+
+    //Reinicia la mejor puntuación al presionar la tecla Supr
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Delete") {
+            highScore = 0;
+            localStorage.setItem("highScore", highScore);
+            highScoreDisplay.textContent = `Mejor Puntuación: ${highScore}`;
+        }
+    });
+
 
     startButton.addEventListener("click", iniciarJuego);
     botonPausa.addEventListener("click", pausarJuego);

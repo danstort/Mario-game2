@@ -1,0 +1,23 @@
+El objetivo principal del juego es alcanzar la mayor puntuación posible sobreviviendo a los enemigos.
+
+El juego comienza al presionar el botón “Iniciar juego”. Mario puede moverse hacia la derecha, izquierda y saltar usando las flechas del teclado. 
+
+Al recolecta una moneda suma 10 puntos y al aplastar a un enemigo desde arriba, lo elimina y gana 20 puntos.
+
+Al colisionar con un enemigo, pierde una vida. 
+
+Al recolectar puntos, el juego sube de nivel, lo que aumenta la dificultad (velocidad de los enemigos x1,25).
+
+Al alcanzar los 500 puntos, se obtiene una vida extra.
+
+Las monedas aparecen en intervalos regulares y deben ser recolectadas antes de salir del canvas.
+
+El juego termina si Mario pierde todas sus vidas. Se muestra una alerta con el mensaje de “Has perdido” y se puede reiniciar la partida.
+
+Al iniciar la partida, solo se mantiene activo el botón "Pausar partida". Al clicar en él, se activa el botón "Reiniciar partida", dando la oportunidad de reiniciar el juego o reanudarlo.
+
+En la parte superior se muestra la puntuación actual, el nivel, las vidas restantes y la mejor puntuación guardada.
+
+El juego también puede pausarse con la tecla Esc.
+
+La mejor puntuación se puede restablecer al clicar en la tecla Suprimir/Delete.
