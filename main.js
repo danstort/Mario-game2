@@ -396,6 +396,7 @@ window.onload = function () {
     function reiniciarJuego() {
         detenerJuego();
         paused = false;
+        botonPausa.textContent = "Pausar juego"; // Restablecer el texto del botón "Pausar"
         personajeMario = new Mario(10, 318);
         enemigos = [];
         nubes = [];
